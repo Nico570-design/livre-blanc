@@ -1,0 +1,1779 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>La grille qui libère — Livre Blanc Design Ops · Maëlyne</title>
+  <meta name="description" content="Un livre blanc pour les designers qui veulent arrêter de choisir entre bien travailler et bien créer. Par Maëlyne, UX/UI Designer." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ─── RESET & CUSTOM PROPERTIES ─────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #F4F1EC;
+      --grid: #E2DED8;
+      --ink: #0F0F0F;
+      --accent: #FF4D1C;
+      --gray: #9B9790;
+      --dark-bg: #111111;
+      --white: #FFFFFF;
+
+      --font-display: 'Playfair Display', Georgia, serif;
+      --font-body: 'DM Sans', system-ui, sans-serif;
+      --font-mono: 'DM Mono', 'Courier New', monospace;
+
+      --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background-color: var(--bg);
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.7;
+      overflow-x: hidden;
+      cursor: none;
+    }
+
+    body.touch-device {
+      cursor: auto;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    ul { list-style: none; }
+    img { display: block; max-width: 100%; }
+
+    /* ─── GRID BACKGROUND ────────────────────────────────────────── */
+    .grid-bg {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background-image: repeating-linear-gradient(
+        to right,
+        var(--grid) 0px,
+        var(--grid) 1px,
+        transparent 1px,
+        transparent calc(100% / 12)
+      );
+      -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.05) 60%, rgba(0,0,0,0) 100%);
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.05) 60%, rgba(0,0,0,0) 100%);
+    }
+
+    /* ─── CUSTOM CURSOR ──────────────────────────────────────────── */
+    #cursor {
+      position: fixed;
+      top: 0; left: 0;
+      width: 20px; height: 20px;
+      pointer-events: none;
+      z-index: 9999;
+      transform: translate(-50%, -50%);
+      transition: transform 0.15s var(--ease-out-expo);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #cursor::before,
+    #cursor::after {
+      content: '';
+      position: absolute;
+      background: var(--accent);
+    }
+    #cursor::before { width: 1px; height: 20px; }
+    #cursor::after  { width: 20px; height: 1px; }
+
+    #cursor.cursor-hover {
+      transform: translate(-50%, -50%) scale(1.5);
+    }
+
+    /* ─── SCROLL ANIMATIONS ──────────────────────────────────────── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.6s var(--ease-out-expo), transform 0.6s var(--ease-out-expo);
+      transition-delay: var(--delay, 0ms);
+    }
+    .reveal.animate-in {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ─── NAV ────────────────────────────────────────────────────── */
+    .nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 20px 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: background 0.3s ease, border-bottom 0.3s ease;
+    }
+
+    .nav.scrolled {
+      background: var(--bg);
+      border-bottom: 1px solid var(--grid);
+    }
+
+    .nav__logo {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: lowercase;
+      color: var(--ink);
+    }
+
+    .nav__links {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+    }
+
+    .nav__link {
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--ink);
+      opacity: 0.7;
+      transition: opacity 0.2s;
+    }
+    .nav__link:hover { opacity: 1; }
+
+    .nav__cta {
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 500;
+      background: var(--accent);
+      color: var(--white);
+      padding: 10px 20px;
+      border-radius: 3px;
+      transition: transform 0.2s var(--ease-out-expo), box-shadow 0.2s;
+    }
+    .nav__cta:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(255, 77, 28, 0.3);
+    }
+
+    /* ─── SECTION LABEL ──────────────────────────────────────────── */
+    .section-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 40px;
+      display: block;
+    }
+
+    /* ─── HERO ───────────────────────────────────────────────────── */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 140px 60px 80px;
+      overflow: hidden;
+    }
+
+    .hero__content {
+      position: relative;
+      z-index: 2;
+      max-width: 900px;
+    }
+
+    .hero__tag {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      margin-bottom: 32px;
+      display: block;
+    }
+
+    .hero__title {
+      margin-bottom: 32px;
+      line-height: 1.0;
+    }
+
+    .hero__title .line-1 {
+      display: block;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(56px, 8vw, 96px);
+      color: var(--ink);
+      letter-spacing: -0.02em;
+    }
+
+    .hero__title .line-2 {
+      display: block;
+      font-family: var(--font-body);
+      font-weight: 300;
+      font-size: clamp(42px, 6vw, 72px);
+      color: var(--ink);
+      letter-spacing: -0.01em;
+    }
+
+    .hero__title .line-3 {
+      display: block;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-style: italic;
+      font-size: clamp(56px, 8vw, 96px);
+      color: var(--accent);
+      letter-spacing: -0.02em;
+    }
+
+    .hero__subtitle {
+      font-size: 18px;
+      font-weight: 300;
+      color: var(--ink);
+      opacity: 0.75;
+      max-width: 540px;
+      margin-bottom: 48px;
+      line-height: 1.6;
+    }
+
+    .hero__actions {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-body);
+      font-size: 15px;
+      font-weight: 500;
+      background: var(--accent);
+      color: var(--white);
+      padding: 16px 28px;
+      border-radius: 3px;
+      transition: transform 0.2s var(--ease-out-expo), box-shadow 0.2s;
+      border: none;
+      cursor: none;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(255, 77, 28, 0.3);
+    }
+
+    .btn-ghost {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-body);
+      font-size: 15px;
+      font-weight: 400;
+      color: var(--ink);
+      padding: 16px 4px;
+      border-bottom: 1px solid var(--ink);
+      opacity: 0.7;
+      transition: opacity 0.2s;
+    }
+    .btn-ghost:hover { opacity: 1; }
+
+    .hero__bg-text {
+      position: absolute;
+      bottom: -20px;
+      right: -20px;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(120px, 18vw, 240px);
+      color: var(--ink);
+      opacity: 0.04;
+      transform: rotate(-3deg);
+      line-height: 1;
+      pointer-events: none;
+      white-space: nowrap;
+      z-index: 1;
+      letter-spacing: -0.03em;
+    }
+
+    .hero__scroll-hint {
+      position: absolute;
+      bottom: 40px;
+      left: 60px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      color: var(--gray);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .hero__scroll-hint::before {
+      content: '';
+      display: block;
+      width: 40px;
+      height: 1px;
+      background: var(--gray);
+    }
+
+    /* ─── SECTION 2: LE DÉBAT ────────────────────────────────────── */
+    .debat {
+      padding: 120px 60px;
+      background: var(--bg);
+      position: relative;
+    }
+
+    .debat__inner {
+      display: grid;
+      grid-template-columns: 60fr 40fr;
+      gap: 80px;
+      align-items: start;
+    }
+
+    .debat__left {}
+
+    .debat__quote-wrapper {
+      margin-bottom: 32px;
+      position: relative;
+    }
+
+    .debat__crossed {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-style: italic;
+      font-size: clamp(28px, 4vw, 48px);
+      color: var(--ink);
+      line-height: 1.15;
+      position: relative;
+      display: inline-block;
+    }
+
+    .debat__crossed::after {
+      content: '';
+      position: absolute;
+      left: -2%;
+      top: 50%;
+      width: 0%;
+      height: 2px;
+      background: var(--accent);
+      transition: width 1.2s var(--ease-out-expo);
+    }
+
+    .debat__crossed.strike-in::after {
+      width: 104%;
+    }
+
+    .debat__pivot {
+      font-family: var(--font-display);
+      font-weight: 400;
+      font-style: italic;
+      font-size: clamp(24px, 3vw, 38px);
+      color: var(--ink);
+      opacity: 0.5;
+      margin-top: 24px;
+    }
+
+    .debat__tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 64px;
+      padding-top: 40px;
+      border-top: 1px solid var(--grid);
+    }
+
+    .debat__tag {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--gray);
+      opacity: 0.8;
+      letter-spacing: 0.04em;
+    }
+
+    .debat__right {
+      padding-top: 8px;
+    }
+
+    .debat__right p {
+      font-size: 16px;
+      color: var(--ink);
+      opacity: 0.8;
+      line-height: 1.8;
+      margin-bottom: 20px;
+    }
+    .debat__right p:last-child { margin-bottom: 0; }
+
+    /* ─── SECTION 3: CONTENU ─────────────────────────────────────── */
+    .contenu {
+      padding: 120px 60px;
+      background: var(--white);
+    }
+
+    .contenu__header {
+      margin-bottom: 64px;
+    }
+
+    .contenu__grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: var(--grid);
+      border: 1px solid var(--grid);
+    }
+
+    .contenu__block {
+      background: var(--white);
+      padding: 48px 40px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.3s;
+      cursor: default;
+    }
+
+    .contenu__block::before {
+      content: attr(data-num);
+      position: absolute;
+      top: 16px;
+      right: 24px;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 120px;
+      color: var(--ink);
+      opacity: 0.06;
+      line-height: 1;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+
+    .contenu__block:hover::before {
+      opacity: 0.15;
+    }
+
+    .contenu__block-inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    .contenu__block-num {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--accent);
+      letter-spacing: 0.1em;
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .contenu__block-title {
+      font-family: var(--font-body);
+      font-weight: 500;
+      font-size: 20px;
+      color: var(--ink);
+      margin-bottom: 16px;
+      line-height: 1.3;
+    }
+
+    .contenu__block-text {
+      font-size: 15px;
+      color: var(--ink);
+      opacity: 0.7;
+      line-height: 1.7;
+    }
+
+    .contenu__block:hover {
+      outline: 1px solid var(--accent);
+      outline-offset: -1px;
+    }
+
+    /* ─── SECTION 4: À QUI ───────────────────────────────────────── */
+    .audience {
+      padding: 120px 60px;
+      background: #ECEAE5;
+      overflow: hidden;
+    }
+
+    .audience__header {
+      margin-bottom: 48px;
+    }
+
+    .marquee-wrapper {
+      overflow: hidden;
+      padding: 20px 0;
+      margin-bottom: 64px;
+      position: relative;
+    }
+
+    .marquee-wrapper::before,
+    .marquee-wrapper::after {
+      content: '';
+      position: absolute;
+      top: 0; bottom: 0;
+      width: 120px;
+      z-index: 1;
+      pointer-events: none;
+    }
+    .marquee-wrapper::before { left: 0; background: linear-gradient(to right, #ECEAE5, transparent); }
+    .marquee-wrapper::after  { right: 0; background: linear-gradient(to left, #ECEAE5, transparent); }
+
+    .marquee-track {
+      display: flex;
+      gap: 0;
+      animation: marquee 28s linear infinite;
+      width: max-content;
+    }
+
+    .marquee-item {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-style: italic;
+      font-size: clamp(28px, 4vw, 48px);
+      color: var(--ink);
+      padding: 0 40px;
+      white-space: nowrap;
+      opacity: 0.15;
+    }
+    .marquee-item:nth-child(odd) { opacity: 0.12; }
+    .marquee-item.sep {
+      color: var(--accent);
+      opacity: 0.6;
+      font-style: normal;
+      font-size: 20px;
+      padding: 0 10px;
+      align-self: center;
+    }
+
+    @keyframes marquee {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+
+    .audience__body {
+      max-width: 640px;
+      font-size: 17px;
+      line-height: 1.7;
+      opacity: 0.8;
+      margin-bottom: 40px;
+    }
+
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .badge {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink);
+      border: 1px solid var(--ink);
+      padding: 8px 14px;
+      border-radius: 4px;
+      transition: background 0.2s, color 0.2s;
+      opacity: 0.7;
+    }
+    .badge:hover {
+      background: var(--ink);
+      color: var(--white);
+      opacity: 1;
+    }
+
+    /* ─── SECTION 5: STATS ───────────────────────────────────────── */
+    .stats {
+      padding: 120px 60px;
+      background: var(--dark-bg);
+      color: var(--white);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stats::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: repeating-linear-gradient(
+        to right,
+        rgba(255,255,255,0.03) 0px,
+        rgba(255,255,255,0.03) 1px,
+        transparent 1px,
+        transparent calc(100% / 12)
+      );
+      pointer-events: none;
+    }
+
+    .stats__inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .stat {
+      padding: 48px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 2px;
+    }
+
+    .stat__number {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(72px, 9vw, 120px);
+      color: var(--accent);
+      line-height: 1;
+      margin-bottom: 24px;
+      display: block;
+    }
+
+    .stat__text {
+      font-size: 16px;
+      line-height: 1.7;
+      opacity: 0.75;
+      margin-bottom: 16px;
+    }
+
+    .stat__source {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--gray);
+      font-style: normal;
+    }
+
+    /* ─── SECTION 6: TEMPLATES ───────────────────────────────────── */
+    .templates {
+      padding: 120px 60px;
+      background: var(--bg);
+    }
+
+    .templates__header {
+      margin-bottom: 24px;
+    }
+    .templates__intro {
+      font-size: 16px;
+      color: var(--ink);
+      opacity: 0.65;
+      margin-bottom: 72px;
+    }
+
+    .templates__grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+      perspective: 1000px;
+    }
+
+    .template-card {
+      background: var(--white);
+      border: 1px solid var(--grid);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04);
+      padding: 32px 28px;
+      transition: transform 0.3s var(--ease-out-expo), box-shadow 0.3s;
+      position: relative;
+    }
+
+    .template-card:nth-child(1) { transform: rotate(-1.2deg); }
+    .template-card:nth-child(2) { transform: rotate(0.8deg); }
+    .template-card:nth-child(3) { transform: rotate(-0.6deg); }
+    .template-card:nth-child(4) { transform: rotate(1.4deg); }
+
+    .template-card:hover {
+      transform: rotate(0) translateY(-8px) !important;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.06);
+      z-index: 2;
+    }
+
+    .template-card__badge {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      background: var(--accent);
+      color: var(--white);
+      padding: 4px 10px;
+      border-radius: 2px;
+      margin-bottom: 24px;
+    }
+
+    .template-card__title {
+      font-family: var(--font-body);
+      font-weight: 500;
+      font-size: 16px;
+      color: var(--ink);
+      margin-bottom: 12px;
+      line-height: 1.35;
+    }
+
+    .template-card__desc {
+      font-size: 14px;
+      color: var(--gray);
+      line-height: 1.65;
+      margin-bottom: 28px;
+    }
+
+    .template-card__level {
+      margin-top: auto;
+      padding-top: 20px;
+      border-top: 1px solid var(--grid);
+    }
+
+    .template-card__level-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--gray);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .template-card__level-badge {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border: 1px solid var(--grid);
+      padding: 4px 8px;
+      border-radius: 2px;
+      color: var(--ink);
+      display: inline-block;
+    }
+
+    /* ─── SECTION 7: BIO ─────────────────────────────────────────── */
+    .bio {
+      padding: 120px 60px;
+      background: var(--bg);
+    }
+
+    .bio__inner {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 80px;
+      align-items: start;
+    }
+
+    /* Abstract CSS portrait */
+    .bio__avatar {
+      width: 100%;
+      aspect-ratio: 4/5;
+      position: relative;
+      overflow: hidden;
+      background: var(--ink);
+    }
+
+    .bio__avatar-q1 {
+      position: absolute;
+      top: 0; left: 0;
+      width: 50%; height: 50%;
+      background: var(--bg);
+    }
+    .bio__avatar-q2 {
+      position: absolute;
+      top: 0; right: 0;
+      width: 50%; height: 50%;
+      background: var(--accent);
+    }
+    .bio__avatar-q3 {
+      position: absolute;
+      bottom: 0; left: 0;
+      width: 50%; height: 50%;
+      background: #1A1A1A;
+    }
+    .bio__avatar-q4 {
+      position: absolute;
+      bottom: 0; right: 0;
+      width: 50%; height: 50%;
+      background: var(--bg);
+      opacity: 0.08;
+    }
+
+    /* Diagonal shape for portrait feel */
+    .bio__avatar-shape {
+      position: absolute;
+      top: 20%;
+      left: 15%;
+      width: 70%;
+      height: 65%;
+      background: var(--ink);
+      clip-path: ellipse(44% 50% at 50% 50%);
+      opacity: 0.85;
+    }
+
+    /* Inner highlight */
+    .bio__avatar-highlight {
+      position: absolute;
+      top: 28%;
+      left: 28%;
+      width: 18%;
+      height: 10%;
+      background: var(--white);
+      border-radius: 50%;
+      opacity: 0.9;
+      transform: rotate(-20deg);
+    }
+
+    /* Grid overlay on avatar */
+    .bio__avatar-grid {
+      position: absolute;
+      inset: 0;
+      background-image: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 23px,
+        rgba(255,255,255,0.04) 23px,
+        rgba(255,255,255,0.04) 24px
+      ), repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 23px,
+        rgba(255,255,255,0.04) 23px,
+        rgba(255,255,255,0.04) 24px
+      );
+    }
+
+    /* Label on avatar */
+    .bio__avatar-label {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      color: rgba(255,255,255,0.5);
+      text-transform: uppercase;
+    }
+
+    .bio__content {
+      padding-top: 8px;
+    }
+
+    .bio__text {
+      font-size: 17px;
+      line-height: 1.85;
+      color: var(--ink);
+      opacity: 0.85;
+      margin-bottom: 48px;
+    }
+    .bio__text p { margin-bottom: 20px; }
+    .bio__text p:last-child { margin-bottom: 0; }
+
+    .bio__credentials {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .bio__cred {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--gray);
+      letter-spacing: 0.06em;
+    }
+
+    /* ─── SECTION 8: CTA ORANGE ──────────────────────────────────── */
+    .cta-orange {
+      padding: 120px 60px;
+      background: var(--accent);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-orange::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: repeating-linear-gradient(
+        to right,
+        rgba(255,255,255,0.06) 0px,
+        rgba(255,255,255,0.06) 1px,
+        transparent 1px,
+        transparent calc(100% / 12)
+      );
+      pointer-events: none;
+    }
+
+    .cta-orange__inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    .cta-orange__headline {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(36px, 5vw, 64px);
+      color: var(--white);
+      line-height: 1.15;
+      margin-bottom: 20px;
+      letter-spacing: -0.02em;
+    }
+
+    .cta-orange__sub {
+      font-family: var(--font-display);
+      font-weight: 400;
+      font-style: italic;
+      font-size: clamp(22px, 3vw, 36px);
+      color: rgba(255,255,255,0.7);
+      margin-bottom: 56px;
+    }
+
+    .btn-dark {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-body);
+      font-size: 16px;
+      font-weight: 500;
+      background: var(--ink);
+      color: var(--white);
+      padding: 18px 36px;
+      border-radius: 3px;
+      transition: background 0.2s, color 0.2s, transform 0.2s var(--ease-out-expo);
+      border: 2px solid var(--ink);
+      cursor: none;
+    }
+    .btn-dark:hover {
+      background: var(--white);
+      color: var(--ink);
+      transform: translateY(-2px);
+    }
+
+    .cta-orange__meta {
+      display: block;
+      margin-top: 24px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.5);
+      text-transform: uppercase;
+    }
+
+    /* ─── SECTION 9: RÉASSURANCE ─────────────────────────────────── */
+    .reassurance {
+      padding: 120px 60px;
+      background: var(--white);
+    }
+
+    .reassurance__inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+    }
+
+    .reassurance__col-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+      display: block;
+    }
+    .reassurance__col-label.negative { color: var(--gray); }
+    .reassurance__col-label.positive { color: var(--accent); }
+
+    .reassurance__list {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .reassurance__item {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      font-size: 16px;
+      line-height: 1.55;
+    }
+
+    .reassurance__item .icon {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 400;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .reassurance__item.neg .icon { color: var(--gray); }
+    .reassurance__item.neg .text { color: var(--gray); }
+
+    .reassurance__item.pos .icon { color: var(--accent); }
+    .reassurance__item.pos .text { color: var(--ink); }
+
+    /* ─── FOOTER ─────────────────────────────────────────────────── */
+    .footer {
+      padding: 60px 60px 48px;
+      background: var(--ink);
+      color: var(--bg);
+    }
+
+    .footer__top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 40px;
+    }
+
+    .footer__logo {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 28px;
+      color: var(--bg);
+    }
+
+    .footer__links {
+      display: flex;
+      gap: 28px;
+    }
+
+    .footer__link {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(244, 241, 236, 0.5);
+      transition: color 0.2s;
+    }
+    .footer__link:hover { color: var(--bg); }
+
+    .footer__divider {
+      width: 100%;
+      height: 1px;
+      background: rgba(255,255,255,0.1);
+      margin-bottom: 32px;
+    }
+
+    .footer__bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+
+    .footer__quote {
+      font-family: var(--font-display);
+      font-style: italic;
+      font-size: 16px;
+      color: rgba(244, 241, 236, 0.4);
+      max-width: 460px;
+      line-height: 1.5;
+    }
+
+    .footer__year {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: rgba(244, 241, 236, 0.25);
+    }
+
+    /* ─── MODAL ──────────────────────────────────────────────────── */
+    #download-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: rgba(15,15,15,0.75);
+      backdrop-filter: blur(4px);
+      align-items: center;
+      justify-content: center;
+    }
+    #download-modal.open {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--white);
+      padding: 56px;
+      max-width: 480px;
+      width: calc(100% - 48px);
+      border-radius: 2px;
+      position: relative;
+      animation: modal-in 0.4s var(--ease-out-expo);
+    }
+
+    @keyframes modal-in {
+      from { transform: translateY(20px) scale(0.98); opacity: 0; }
+      to   { transform: translateY(0) scale(1); opacity: 1; }
+    }
+
+    .modal__close {
+      position: absolute;
+      top: 20px; right: 20px;
+      width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      color: var(--gray);
+      cursor: none;
+      transition: color 0.2s;
+      background: none; border: none;
+    }
+    .modal__close:hover { color: var(--ink); }
+
+    .modal__label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .modal__title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 28px;
+      color: var(--ink);
+      line-height: 1.2;
+      margin-bottom: 12px;
+    }
+
+    .modal__sub {
+      font-size: 15px;
+      color: var(--gray);
+      margin-bottom: 36px;
+      line-height: 1.6;
+    }
+
+    .modal__form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .modal__input {
+      font-family: var(--font-body);
+      font-size: 15px;
+      color: var(--ink);
+      background: var(--bg);
+      border: 1px solid var(--grid);
+      border-radius: 2px;
+      padding: 14px 16px;
+      outline: none;
+      transition: border-color 0.2s;
+      cursor: text;
+    }
+    .modal__input:focus { border-color: var(--ink); }
+    .modal__input::placeholder { color: var(--gray); }
+
+    .modal__submit {
+      font-family: var(--font-body);
+      font-size: 15px;
+      font-weight: 500;
+      background: var(--accent);
+      color: var(--white);
+      border: none;
+      border-radius: 3px;
+      padding: 16px;
+      cursor: none;
+      transition: transform 0.2s var(--ease-out-expo), box-shadow 0.2s;
+    }
+    .modal__submit:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(255, 77, 28, 0.3);
+    }
+
+    .modal__disclaimer {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--gray);
+      text-align: center;
+      margin-top: 8px;
+      letter-spacing: 0.04em;
+    }
+
+    /* ─── RESPONSIVE ─────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      body { cursor: auto; }
+      #cursor { display: none; }
+
+      .nav {
+        padding: 16px 24px;
+      }
+      .nav__links {
+        gap: 16px;
+      }
+      .nav__link { display: none; }
+
+      .hero {
+        padding: 120px 24px 60px;
+      }
+      .hero__scroll-hint { left: 24px; }
+
+      .debat { padding: 80px 24px; }
+      .debat__inner { grid-template-columns: 1fr; gap: 48px; }
+
+      .contenu { padding: 80px 24px; }
+      .contenu__grid { grid-template-columns: 1fr; }
+
+      .audience { padding: 80px 24px; }
+
+      .stats { padding: 80px 24px; }
+      .stats__inner { grid-template-columns: 1fr; gap: 32px; }
+      .stat { padding: 32px; }
+
+      .templates { padding: 80px 24px; }
+      .templates__grid {
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+      .template-card:nth-child(1),
+      .template-card:nth-child(2),
+      .template-card:nth-child(3),
+      .template-card:nth-child(4) {
+        transform: none;
+      }
+
+      .bio { padding: 80px 24px; }
+      .bio__inner { grid-template-columns: 1fr; gap: 48px; }
+      .bio__avatar { max-width: 280px; }
+
+      .cta-orange { padding: 80px 24px; }
+
+      .reassurance { padding: 80px 24px; }
+      .reassurance__inner { grid-template-columns: 1fr; gap: 56px; }
+
+      .footer {
+        padding: 48px 24px;
+      }
+      .footer__top { flex-direction: column; align-items: flex-start; gap: 24px; }
+      .footer__bottom { flex-direction: column; gap: 16px; }
+
+      .modal { padding: 36px 24px; }
+    }
+
+    @media (max-width: 480px) {
+      .hero__actions { flex-direction: column; align-items: flex-start; }
+      .badges { flex-direction: column; }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Grid background -->
+  <div class="grid-bg" aria-hidden="true"></div>
+
+  <!-- Custom cursor -->
+  <div id="cursor" aria-hidden="true"></div>
+
+  <!-- Download Modal -->
+  <div id="download-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal">
+      <button class="modal__close" id="modal-close" aria-label="Fermer">✕</button>
+      <span class="modal__label">Livre Blanc · Accès immédiat</span>
+      <h2 class="modal__title" id="modal-title">Télécharger le livre blanc</h2>
+      <p class="modal__sub">Laissez votre email et recevez le PDF instantanément. 122 pages, gratuit.</p>
+      <form class="modal__form" onsubmit="handleFormSubmit(event)">
+        <input class="modal__input" type="text" placeholder="Votre prénom" required />
+        <input class="modal__input" type="email" placeholder="votre@email.com" required />
+        <button class="modal__submit" type="submit">Recevoir le livre blanc →</button>
+        <p class="modal__disclaimer">Aucun spam · Données protégées · Désinscription en 1 clic</p>
+      </form>
+    </div>
+  </div>
+
+  <!-- NAV -->
+  <nav class="nav" id="main-nav" role="navigation">
+    <a href="#" class="nav__logo">maëlyne</a>
+    <div class="nav__links">
+      <a href="#bio" class="nav__link">À propos</a>
+      <a href="#contenu" class="nav__link">Le livre blanc</a>
+      <a href="#" class="nav__cta download-trigger">Télécharger →</a>
+    </div>
+  </nav>
+
+  <!-- SECTION 1: HERO -->
+  <section class="hero" id="hero" aria-labelledby="hero-title">
+    <div class="hero__content">
+      <span class="hero__tag reveal">[LIVRE BLANC · DESIGN OPS · 2025]</span>
+
+      <h1 class="hero__title" id="hero-title">
+        <span class="line-1 reveal" style="--delay: 100ms">LA STRUCTURE,</span>
+        <span class="line-2 reveal" style="--delay: 200ms">C'EST CE QUI REND</span>
+        <span class="line-3 reveal" style="--delay: 300ms">LA CRÉATIVITÉ POSSIBLE.</span>
+      </h1>
+
+      <p class="hero__subtitle reveal" style="--delay: 400ms">
+        Un livre blanc pour les designers qui veulent arrêter de choisir entre bien travailler et bien créer.
+      </p>
+
+      <div class="hero__actions reveal" style="--delay: 500ms">
+        <a href="#" class="btn-primary download-trigger">↓ Télécharger gratuitement</a>
+        <a href="#contenu" class="btn-ghost">Voir le contenu →</a>
+      </div>
+    </div>
+
+    <div class="hero__bg-text" aria-hidden="true">DESIGN OPS</div>
+    <div class="hero__scroll-hint" aria-hidden="true">Défiler</div>
+  </section>
+
+  <!-- SECTION 2: LE DÉBAT -->
+  <section class="debat" id="debat" aria-labelledby="debat-heading">
+    <div class="debat__inner">
+      <div class="debat__left">
+        <h2 id="debat-heading" class="sr-only">Le débat</h2>
+        <div class="debat__quote-wrapper">
+          <p class="debat__crossed reveal" id="crossed-quote">"La structure tue la créativité."</p>
+          <p class="debat__pivot reveal" style="--delay: 200ms">Et si c'était l'inverse&nbsp;?</p>
+        </div>
+
+        <div class="debat__tags reveal" style="--delay: 300ms">
+          <span class="debat__tag">// fichiers_épars</span>
+          <span class="debat__tag">// composants_dupliqués</span>
+          <span class="debat__tag">// onboarding_improvisé</span>
+          <span class="debat__tag">// livrables_incohérents</span>
+          <span class="debat__tag">// docs_inaccessibles</span>
+        </div>
+      </div>
+
+      <div class="debat__right reveal" style="--delay: 150ms">
+        <p>On l'a tous entendu. Parfois même dit. Les templates contraignent. Les process brident. Les design systems transforment les designers en ouvriers de la mise en page.</p>
+        <p>Ce livre blanc creuse l'autre hypothèse : la structure, quand elle est bien pensée, ne limite pas la créativité. Elle en devient le socle.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 3: CE QUE CONTIENT LE LIVRE BLANC -->
+  <section class="contenu" id="contenu" aria-labelledby="contenu-heading">
+    <div class="contenu__header">
+      <span class="section-label reveal">[CE QUE VOUS ALLEZ TROUVER DEDANS]</span>
+      <h2 id="contenu-heading" class="reveal" style="--delay: 100ms; font-family: var(--font-display); font-weight: 700; font-size: clamp(36px, 5vw, 56px); line-height: 1.1; letter-spacing: -0.02em;">Quatre axes.<br>Une méthode.</h2>
+    </div>
+
+    <div class="contenu__grid">
+      <article class="contenu__block reveal" data-num="01" style="--delay: 0ms">
+        <div class="contenu__block-inner">
+          <span class="contenu__block-num">① Le diagnostic</span>
+          <h3 class="contenu__block-title">Nommer le problème avec précision</h3>
+          <p class="contenu__block-text">Les symptômes concrets d'une équipe design non structurée. Fichiers épars, onboarding improvisé, composants dupliqués, livrables incohérents d'un sprint à l'autre.</p>
+        </div>
+      </article>
+
+      <article class="contenu__block reveal" data-num="02" style="--delay: 100ms">
+        <div class="contenu__block-inner">
+          <span class="contenu__block-num">② Le cadre</span>
+          <h3 class="contenu__block-title">Trois niveaux d'intervention</h3>
+          <p class="contenu__block-text">Ce qu'est vraiment le Design Ops — ses 3 niveaux d'intervention : opérationnel (quotidien), organisationnel (équipe), stratégique (entreprise).</p>
+        </div>
+      </article>
+
+      <article class="contenu__block reveal" data-num="03" style="--delay: 200ms">
+        <div class="contenu__block-inner">
+          <span class="contenu__block-num">③ La frontière</span>
+          <h3 class="contenu__block-title">Ce qu'on standardise, ce qu'on libère</h3>
+          <p class="contenu__block-text">Ce qui doit être industrialisé (tokens, composants, rituels, repository…) et ce qui doit rester un espace de création (discovery, expérimentation, vision produit).</p>
+        </div>
+      </article>
+
+      <article class="contenu__block reveal" data-num="04" style="--delay: 300ms">
+        <div class="contenu__block-inner">
+          <span class="contenu__block-num">④ Les outils</span>
+          <h3 class="contenu__block-title">4 templates directement applicables</h3>
+          <p class="contenu__block-text">4 templates directement applicables, adaptés à votre niveau de maturité : solo/duo, petite équipe, scale-up, grand groupe.</p>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- SECTION 4: À QUI ÇA S'ADRESSE -->
+  <section class="audience" id="audience" aria-labelledby="audience-heading">
+    <div class="audience__header">
+      <span class="section-label reveal">[VOUS VOUS RECONNAISSEZ ?]</span>
+      <h2 id="audience-heading" class="reveal" style="--delay: 100ms; font-family: var(--font-display); font-weight: 700; font-size: clamp(36px, 5vw, 52px); line-height: 1.1; letter-spacing: -0.02em;">Fait pour vous,<br><em>quel que soit votre niveau.</em></h2>
+    </div>
+
+    <!-- Scrolling marquee -->
+    <div class="marquee-wrapper" aria-hidden="true">
+      <div class="marquee-track">
+        <span class="marquee-item">UX Designer</span><span class="marquee-item sep">·</span>
+        <span class="marquee-item">UI Designer</span><span class="marquee-item sep">·</span>
+        <span class="marquee-item">Product Designer</span><span class="marquee-item sep">·</span>
+        <span class="marquee-item">Design Ops</span><span class="marquee-item sep">·</span>
+        <span class="marquee-item">Design System</span><span class="marquee-item sep">·</span>
+        <span class="marquee-item">Lead Designer</span><span class="marquee-item sep">·</span>
+        <span class="marquee-item">Head of Design</span><span class="marquee-item sep">·</span>
+        <span class="marquee-item">Design Manager</span><span class="marquee-item sep">·</span>
+        <!-- Duplicate for seamless loop -->
+        <span class="marquee-item">UX Designer</span><span class="marquee-item sep">·</span>
+        <span class="marquee-item">UI Designer</span><span class="marquee-item sep">·</span>
+        <span class="marquee-item">Product Designer</span><span class="marquee-item sep">·</span>
+        <span class="marquee-item">Design Ops</span><span class="marquee-item sep">·</span>
+        <span class="marquee-item">Design System</span><span class="marquee-item sep">·</span>
+        <span class="marquee-item">Lead Designer</span><span class="marquee-item sep">·</span>
+        <span class="marquee-item">Head of Design</span><span class="marquee-item sep">·</span>
+        <span class="marquee-item">Design Manager</span><span class="marquee-item sep">·</span>
+      </div>
+    </div>
+
+    <p class="audience__body reveal">Que vous travailliez seul·e dans une startup ou dans une équipe de 30, ce livre blanc s'adapte à votre réalité. Chaque outil est tagué par niveau de maturité.</p>
+
+    <div class="badges reveal" style="--delay: 100ms">
+      <span class="badge">Solo ou duo</span>
+      <span class="badge">Petite équipe</span>
+      <span class="badge">Scale-up</span>
+      <span class="badge">Grand groupe</span>
+    </div>
+  </section>
+
+  <!-- SECTION 5: STATISTIQUES -->
+  <section class="stats" id="stats" aria-labelledby="stats-heading">
+    <h2 id="stats-heading" class="sr-only">Chiffres clés</h2>
+    <div class="stats__inner">
+      <div class="stat reveal" style="--delay: 0ms">
+        <span class="stat__number" data-target="87" data-suffix="%">0%</span>
+        <p class="stat__text">des équipes ayant mis en place des pratiques de Design Ops déclarent une amélioration de la satisfaction de leurs parties prenantes.</p>
+        <em class="stat__source">— DesignOps Summit 2024</em>
+      </div>
+
+      <div class="stat reveal" style="--delay: 150ms">
+        <span class="stat__number" data-target="52" data-suffix="%">0%</span>
+        <p class="stat__text">des organisations observent un impact réel sur leur fonctionnement opérationnel depuis l'adoption du Design Ops.</p>
+        <em class="stat__source">— DesignOps Assembly Benchmark Report 2024</em>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 6: LES TEMPLATES -->
+  <section class="templates" id="templates" aria-labelledby="templates-heading">
+    <div class="templates__header">
+      <span class="section-label reveal">[4 OUTILS DIRECTEMENT APPLICABLES]</span>
+      <h2 id="templates-heading" class="reveal" style="--delay: 100ms; font-family: var(--font-display); font-weight: 700; font-size: clamp(36px, 5vw, 56px); line-height: 1.1; letter-spacing: -0.02em;">Des outils,<br>pas des slides.</h2>
+    </div>
+    <p class="templates__intro reveal" style="--delay: 200ms">Pas des slides théoriques. Des templates conçus pour être utilisés demain matin.</p>
+
+    <div class="templates__grid">
+      <article class="template-card reveal" style="--delay: 0ms">
+        <span class="template-card__badge">Template 01</span>
+        <h3 class="template-card__title">Architecture de design tokens</h3>
+        <p class="template-card__desc">Structurer vos variables Figma dès le premier jour.</p>
+        <div class="template-card__level">
+          <span class="template-card__level-label">Niveau</span>
+          <span class="template-card__level-badge">Solo ou duo</span>
+        </div>
+      </article>
+
+      <article class="template-card reveal" style="--delay: 100ms">
+        <span class="template-card__badge">Template 02</span>
+        <h3 class="template-card__title">Framework rituels d'équipe</h3>
+        <p class="template-card__desc">Design critique, review, synchronisation : les cadences qui font monter une équipe en compétences.</p>
+        <div class="template-card__level">
+          <span class="template-card__level-label">Niveau</span>
+          <span class="template-card__level-badge">Petite équipe</span>
+        </div>
+      </article>
+
+      <article class="template-card reveal" style="--delay: 200ms">
+        <span class="template-card__badge">Template 03</span>
+        <h3 class="template-card__title">Matrice industrialisation / exploration</h3>
+        <p class="template-card__desc">Tracer la frontière entre ce qui doit être standardisé et ce qui doit rester libre.</p>
+        <div class="template-card__level">
+          <span class="template-card__level-label">Niveau</span>
+          <span class="template-card__level-badge">Scale-up</span>
+        </div>
+      </article>
+
+      <article class="template-card reveal" style="--delay: 300ms">
+        <span class="template-card__badge">Template 04</span>
+        <h3 class="template-card__title">Kit onboarding design</h3>
+        <p class="template-card__desc">Faire monter un·e nouveau·elle arrivant·e en autonomie sans perdre de temps.</p>
+        <div class="template-card__level">
+          <span class="template-card__level-label">Niveau</span>
+          <span class="template-card__level-badge">Grand groupe</span>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- SECTION 7: BIO -->
+  <section class="bio" id="bio" aria-labelledby="bio-heading">
+    <div class="bio__inner">
+      <!-- Abstract CSS portrait -->
+      <div class="bio__avatar reveal" role="img" aria-label="Portrait abstrait de Maëlyne">
+        <div class="bio__avatar-q1"></div>
+        <div class="bio__avatar-q2"></div>
+        <div class="bio__avatar-q3"></div>
+        <div class="bio__avatar-q4"></div>
+        <div class="bio__avatar-shape"></div>
+        <div class="bio__avatar-highlight"></div>
+        <div class="bio__avatar-grid"></div>
+        <span class="bio__avatar-label">Maëlyne · UX/UI</span>
+      </div>
+
+      <div class="bio__content">
+        <span class="section-label reveal">[QUI A ÉCRIT ÇA, ET POURQUOI]</span>
+        <h2 id="bio-heading" class="reveal" style="--delay: 100ms; font-family: var(--font-display); font-weight: 700; font-size: clamp(32px, 4vw, 48px); line-height: 1.15; letter-spacing: -0.02em; margin-bottom: 32px;">Maëlyne</h2>
+
+        <div class="bio__text reveal" style="--delay: 200ms">
+          <p>Je suis UX/UI Designer, et je me suis longtemps posé une question : pourquoi certaines équipes créent de la magie, et d'autres s'épuisent à refaire les mêmes choses en boucle&nbsp;?</p>
+          <p>Ce livre blanc est ma réponse. Pas une thèse académique. Pas un discours de consultant. Un retour terrain, structuré pour être utile.</p>
+        </div>
+
+        <div class="bio__credentials reveal" style="--delay: 300ms">
+          <span class="bio__cred">Master UX Design · ESD Toulouse</span>
+          <span class="bio__cred">Bachelor Communication</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 8: CTA ORANGE -->
+  <section class="cta-orange" id="download" aria-labelledby="cta-heading">
+    <div class="cta-orange__inner">
+      <h2 id="cta-heading" class="cta-orange__headline reveal">Vous pouvez continuer à<br>travailler dans le désordre.</h2>
+      <p class="cta-orange__sub reveal" style="--delay: 100ms">Ou vous pouvez lire ça d'abord.</p>
+      <a href="#" class="btn-dark reveal download-trigger" style="--delay: 200ms">↓ Télécharger le livre blanc</a>
+      <span class="cta-orange__meta reveal" style="--delay: 300ms">Format PDF · 122 pages · Accès immédiat · Gratuit</span>
+    </div>
+  </section>
+
+  <!-- SECTION 9: RÉASSURANCE -->
+  <section class="reassurance" id="reassurance" aria-labelledby="reassurance-heading">
+    <h2 id="reassurance-heading" class="sr-only">Ce que c'est, ce que ce n'est pas</h2>
+    <div class="reassurance__inner">
+      <div>
+        <span class="section-label reveal reassurance__col-label negative">Ce que ce n'est PAS</span>
+        <ul class="reassurance__list">
+          <li class="reassurance__item neg reveal" style="--delay: 0ms"><span class="icon">✗</span><span class="text">Une suite de théories sans application</span></li>
+          <li class="reassurance__item neg reveal" style="--delay: 80ms"><span class="icon">✗</span><span class="text">Un contenu réservé aux grandes équipes</span></li>
+          <li class="reassurance__item neg reveal" style="--delay: 160ms"><span class="icon">✗</span><span class="text">Un argument pour tout standardiser</span></li>
+          <li class="reassurance__item neg reveal" style="--delay: 240ms"><span class="icon">✗</span><span class="text">Un énième ebook formaté en template Canva</span></li>
+        </ul>
+      </div>
+
+      <div>
+        <span class="section-label reveal reassurance__col-label positive" style="--delay: 50ms">Ce que c'est</span>
+        <ul class="reassurance__list">
+          <li class="reassurance__item pos reveal" style="--delay: 100ms"><span class="icon">✓</span><span class="text">Un outil de travail</span></li>
+          <li class="reassurance__item pos reveal" style="--delay: 180ms"><span class="icon">✓</span><span class="text">Des frameworks adaptés à votre maturité</span></li>
+          <li class="reassurance__item pos reveal" style="--delay: 260ms"><span class="icon">✓</span><span class="text">Un point de vue assumé, pas un consensus mou</span></li>
+          <li class="reassurance__item pos reveal" style="--delay: 340ms"><span class="icon">✓</span><span class="text">Écrit par une designer, pour des designers</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer" role="contentinfo">
+    <div class="footer__top">
+      <a href="#" class="footer__logo">Maëlyne</a>
+      <nav class="footer__links" aria-label="Liens footer">
+        <a href="#" class="footer__link download-trigger">Télécharger</a>
+        <a href="#" class="footer__link">Portfolio</a>
+        <a href="https://linkedin.com" target="_blank" rel="noopener" class="footer__link">LinkedIn</a>
+      </nav>
+    </div>
+
+    <div class="footer__divider" aria-hidden="true"></div>
+
+    <div class="footer__bottom">
+      <p class="footer__quote">"La structure, c'est ce qui rend la créativité possible."</p>
+      <span class="footer__year">2025</span>
+    </div>
+  </footer>
+
+  <!-- Utility: screen reader only -->
+  <style>.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }</style>
+
+  <script>
+    // ─── CUSTOM CURSOR ──────────────────────────────────────────────
+    (function() {
+      const isTouchDevice = () => window.matchMedia('(hover: none)').matches;
+
+      if (isTouchDevice()) {
+        document.body.classList.add('touch-device');
+        return;
+      }
+
+      const cursor = document.getElementById('cursor');
+      if (!cursor) return;
+
+      let mouseX = -100, mouseY = -100;
+      let curX = -100, curY = -100;
+      let raf;
+
+      const lerp = (a, b, t) => a + (b - a) * t;
+
+      function animateCursor() {
+        curX = lerp(curX, mouseX, 0.2);
+        curY = lerp(curY, mouseY, 0.2);
+        cursor.style.left = curX + 'px';
+        cursor.style.top  = curY + 'px';
+        raf = requestAnimationFrame(animateCursor);
+      }
+
+      document.addEventListener('mousemove', e => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+      });
+
+      document.querySelectorAll('a, button, .badge, .contenu__block, .template-card').forEach(el => {
+        el.addEventListener('mouseenter', () => cursor.classList.add('cursor-hover'));
+        el.addEventListener('mouseleave', () => cursor.classList.remove('cursor-hover'));
+      });
+
+      animateCursor();
+    })();
+
+    // ─── NAV SCROLL ─────────────────────────────────────────────────
+    (function() {
+      const nav = document.getElementById('main-nav');
+      window.addEventListener('scroll', () => {
+        nav.classList.toggle('scrolled', window.scrollY > 80);
+      }, { passive: true });
+    })();
+
+    // ─── INTERSECTION OBSERVER — REVEAL ─────────────────────────────
+    (function() {
+      const revealEls = document.querySelectorAll('.reveal');
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('animate-in');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, {
+        threshold: 0.1,
+        rootMargin: '0px 0px -40px 0px'
+      });
+
+      revealEls.forEach(el => observer.observe(el));
+
+      // Trigger hero elements immediately on load
+      setTimeout(() => {
+        document.querySelectorAll('.hero .reveal').forEach(el => {
+          el.classList.add('animate-in');
+        });
+      }, 100);
+    })();
+
+    // ─── STRIKETHROUGH ANIMATION ─────────────────────────────────────
+    (function() {
+      const crossedEl = document.getElementById('crossed-quote');
+      if (!crossedEl) return;
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            setTimeout(() => {
+              entry.target.classList.add('strike-in');
+            }, 400);
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.5 });
+
+      observer.observe(crossedEl);
+    })();
+
+    // ─── COUNT-UP ANIMATION ──────────────────────────────────────────
+    (function() {
+      const counters = document.querySelectorAll('[data-target]');
+
+      function countUp(el) {
+        const target = parseInt(el.dataset.target, 10);
+        const suffix = el.dataset.suffix || '';
+        const duration = 1800;
+        const start = performance.now();
+
+        function update(now) {
+          const elapsed = now - start;
+          const progress = Math.min(elapsed / duration, 1);
+          // Ease out quart
+          const eased = 1 - Math.pow(1 - progress, 4);
+          const current = Math.round(eased * target);
+          el.textContent = current + suffix;
+
+          if (progress < 1) {
+            requestAnimationFrame(update);
+          } else {
+            el.textContent = target + suffix;
+          }
+        }
+
+        requestAnimationFrame(update);
+      }
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            countUp(entry.target);
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.5 });
+
+      counters.forEach(el => observer.observe(el));
+    })();
+
+    // ─── MODAL ────────────────────────────────────────────────────────
+    (function() {
+      const modal = document.getElementById('download-modal');
+      const closeBtn = document.getElementById('modal-close');
+      const triggers = document.querySelectorAll('.download-trigger');
+
+      function openModal() {
+        modal.classList.add('open');
+        document.body.style.overflow = 'hidden';
+      }
+
+      function closeModal() {
+        modal.classList.remove('open');
+        document.body.style.overflow = '';
+      }
+
+      triggers.forEach(el => {
+        el.addEventListener('click', e => {
+          e.preventDefault();
+          openModal();
+        });
+      });
+
+      closeBtn.addEventListener('click', closeModal);
+
+      modal.addEventListener('click', e => {
+        if (e.target === modal) closeModal();
+      });
+
+      document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && modal.classList.contains('open')) {
+          closeModal();
+        }
+      });
+    })();
+
+    // ─── FORM SUBMIT ──────────────────────────────────────────────────
+    function handleFormSubmit(e) {
+      e.preventDefault();
+      const btn = e.target.querySelector('.modal__submit');
+      btn.textContent = '✓ Livre blanc envoyé !';
+      btn.style.background = '#0F0F0F';
+      btn.disabled = true;
+
+      setTimeout(() => {
+        document.getElementById('download-modal').classList.remove('open');
+        document.body.style.overflow = '';
+        btn.textContent = 'Recevoir le livre blanc →';
+        btn.style.background = '';
+        btn.disabled = false;
+        e.target.reset();
+      }, 2500);
+    }
+
+    // ─── SMOOTH SCROLL ────────────────────────────────────────────────
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function(e) {
+        const href = this.getAttribute('href');
+        if (href === '#' || this.classList.contains('download-trigger')) return;
+        const target = document.querySelector(href);
+        if (target) {
+          e.preventDefault();
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+  </script>
+</body>
+</html>
